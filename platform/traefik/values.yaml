@@ -2,9 +2,18 @@
 # Behind Cloudflare Tunnel, so:
 #   - Service is ClusterIP only (no public LB)
 #   - HTTP only (no TLS at this layer; CF terminates at edge)
-#   - Container binds UNPRIVILEGED 8000; Service maps :80 -> :8000
+#   - Container binds UNPRIVILEGED 8000 (chart default); Service exposes :80
 #   - cloudflared connects to traefik.traefik-system.svc.cluster.local:80
 #   - trust X-Forwarded-* headers from cloudflared
+#
+# Chart port semantics (from _podtemplate.tpl):
+#   port            = entry point address inside the container (also default containerPort)
+#   exposedPort     = port the Service listens on (what callers connect to)
+#   containerPort   = override of the container port (optional; defaults to `port`)
+#   targetPort      = override of the Service's targetPort (optional)
+#
+# Default values for `web` are port:8000 / exposedPort:80 - exactly what we
+# want. We just don't override `port`. The chart's default just works.
 
 deployment:
   replicas: 2
@@ -13,7 +22,7 @@ deployment:
 service:
   type: ClusterIP
 
-# Pod-level (no capabilities here; that's a container-level concept)
+# Pod-level
 podSecurityContext:
   runAsGroup: 65532
   runAsNonRoot: true
@@ -27,23 +36,11 @@ containerSecurityContext:
   allowPrivilegeEscalation: false
   readOnlyRootFilesystem: true
 
-# Port mapping:
-#   port: 80              -> Service port (cloudflared connects here)
-#   exposedPort: 80       -> what the chart exposes on the Service
-#   targetPort: 8000      -> Service forwards to this on the pod (matches containerPort)
-#   containerPort: 8000   -> what Traefik actually binds inside the pod (unprivileged)
-#
-# Note: containerPort sets traefik's --entryPoints.web.address; targetPort
-# routes Service traffic into the container. Both must match.
+# Don't override `port` or `exposedPort` - chart defaults are correct:
+#   web: port=8000 (container binds here), exposedPort=80 (Service listens here)
+# We only customize the bits we actually need to change.
 ports:
   web:
-    port: 80
-    exposedPort: 80
-    targetPort: 8000
-    containerPort: 8000
-    protocol: TCP
-    expose:
-      default: true
     forwardedHeaders:
       trustedIPs:
         - 10.244.0.0/16  # DOKS pod CIDR
