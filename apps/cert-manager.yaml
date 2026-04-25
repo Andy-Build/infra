@@ -15,7 +15,7 @@ spec:
       helm:
         releaseName: cert-manager
         valueFiles:
-          - $values/k8s-infra/platform/cert-manager/values.yaml
+          - $values/platform/cert-manager/values.yaml
     # Values file from our repo
     - repoURL: https://github.com/Andy-Build/infra.git
       targetRevision: main
@@ -23,7 +23,7 @@ spec:
     # ClusterIssuer manifests
     - repoURL: https://github.com/Andy-Build/infra.git
       targetRevision: main
-      path: k8s-infra/platform/cert-manager/manifests
+      path: platform/cert-manager/manifests
   destination:
     server: https://kubernetes.default.svc
     namespace: cert-manager

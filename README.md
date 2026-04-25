@@ -166,9 +166,9 @@ etc.), and unset it when done.
 
 The pattern for a new app `myapp.andy.build`:
 
-1. Create `k8s-infra/apps/myapp.yaml` (an Argo Application pointing at
-   `k8s-infra/<myapp>/`)
-2. Create the manifests under `k8s-infra/<myapp>/`:
+1. Create `apps/myapp.yaml` (an Argo Application pointing at
+   `<myapp>/`)
+2. Create the manifests under `<myapp>/`:
    - Deployment, Service
    - Optional ExternalSecret pulling from `kv/myapp/*`
    - IngressRoute matching `Host(\`myapp.andy.build\`)`

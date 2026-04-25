@@ -10,7 +10,7 @@ spec:
   source:
     repoURL: https://github.com/Andy-Build/infra.git
     targetRevision: main
-    path: k8s-infra/sample/whoami
+    path: sample/whoami
   destination:
     server: https://kubernetes.default.svc
     namespace: whoami

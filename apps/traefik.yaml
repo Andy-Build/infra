@@ -14,13 +14,13 @@ spec:
       helm:
         releaseName: traefik
         valueFiles:
-          - $values/k8s-infra/platform/traefik/values.yaml
+          - $values/platform/traefik/values.yaml
     - repoURL: https://github.com/Andy-Build/infra.git
       targetRevision: main
       ref: values
     - repoURL: https://github.com/Andy-Build/infra.git
       targetRevision: main
-      path: k8s-infra/platform/traefik/manifests
+      path: platform/traefik/manifests
   destination:
     server: https://kubernetes.default.svc
     namespace: traefik-system
