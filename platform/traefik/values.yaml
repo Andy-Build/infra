@@ -1,48 +1,54 @@
 # Traefik values
 # Behind Cloudflare Tunnel, so:
-#   - service is ClusterIP only (no public LB)
-#   - HTTP only on the entrypoint (no TLS at this layer)
-#   - container runs as non-root with NET_BIND_SERVICE so it can bind :80
+#   - Service is ClusterIP only (no public LB)
+#   - HTTP only (no TLS at this layer; CF terminates at edge)
+#   - Container binds UNPRIVILEGED 8000; Service maps :80 -> :8000
+#   - cloudflared connects to traefik.traefik-system.svc.cluster.local:80
 #   - trust X-Forwarded-* headers from cloudflared
 
 deployment:
   replicas: 2
   kind: Deployment
 
-# ClusterIP only. cloudflared connects via cluster DNS.
 service:
   type: ClusterIP
 
-# POD-level security context. Top-level `securityContext` in the chart maps
-# to pod.spec.securityContext (where capabilities are NOT valid).
+# Pod-level (no capabilities here; that's a container-level concept)
 podSecurityContext:
   runAsGroup: 65532
   runAsNonRoot: true
   runAsUser: 65532
   fsGroup: 65532
 
-# CONTAINER-level security context. This is where capabilities go.
-# Bug in earlier values: I put capabilities under `securityContext` (pod-level)
-# where they're silently ignored. They must be under `containerSecurityContext`.
+# Container-level
 containerSecurityContext:
   capabilities:
     drop: [ALL]
-    add: [NET_BIND_SERVICE]
   allowPrivilegeEscalation: false
   readOnlyRootFilesystem: true
 
+# Port mapping:
+#   port: 80              -> Service port (cloudflared connects here)
+#   exposedPort: 80       -> what the chart exposes on the Service
+#   targetPort: 8000      -> Service forwards to this on the pod (matches containerPort)
+#   containerPort: 8000   -> what Traefik actually binds inside the pod (unprivileged)
+#
+# Note: containerPort sets traefik's --entryPoints.web.address; targetPort
+# routes Service traffic into the container. Both must match.
 ports:
   web:
     port: 80
+    exposedPort: 80
+    targetPort: 8000
+    containerPort: 8000
+    protocol: TCP
     expose:
       default: true
-    exposedPort: 80
-    protocol: TCP
     forwardedHeaders:
       trustedIPs:
-        - 10.244.0.0/16
-        - 10.245.0.0/16
-        - 10.20.0.0/16
+        - 10.244.0.0/16  # DOKS pod CIDR
+        - 10.245.0.0/16  # DOKS service CIDR
+        - 10.20.0.0/16   # VPC
     proxyProtocol:
       trustedIPs:
         - 10.244.0.0/16
