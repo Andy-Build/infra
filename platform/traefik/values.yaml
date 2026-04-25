@@ -2,7 +2,8 @@
 # Behind Cloudflare Tunnel, so:
 #   - service is ClusterIP only (no public LB)
 #   - HTTP only on the entrypoint (no TLS at this layer)
-#   - trust X-Forwarded-* headers from cloudflared
+#   - container binds to UNPRIVILEGED 8000; service exposes 80 (cluster default)
+#   - trust X-Forwarded-* headers from cloudflared (in-cluster, IPs from VPC/pod CIDRs)
 
 deployment:
   replicas: 2
@@ -12,39 +13,36 @@ deployment:
 service:
   type: ClusterIP
 
-# Single HTTP entrypoint. CF terminates TLS at the edge.
+# Single HTTP entrypoint.
+# port: 80     -> what the Service exposes (what cloudflared connects to)
+# exposedPort  -> not used since this is ClusterIP, but kept for clarity
+# containerPort: 8000  -> what Traefik actually binds to inside the pod (unprivileged)
 ports:
   web:
     port: 80
+    containerPort: 8000
+    protocol: TCP
     expose:
       default: true
-    exposedPort: 80
-    protocol: TCP
-    # Trust forwarded headers from cloudflared (which is in-cluster, so
-    # technically a trusted source, but be specific anyway)
     forwardedHeaders:
       trustedIPs:
         - 10.244.0.0/16  # DOKS pod CIDR
-        - 10.245.0.0/16  # DOKS service CIDR (varies; harmless if unused)
+        - 10.245.0.0/16  # DOKS service CIDR
         - 10.20.0.0/16   # VPC
     proxyProtocol:
       trustedIPs:
         - 10.244.0.0/16
         - 10.20.0.0/16
-  # No 'websecure' entrypoint -- TLS termination is at the edge
   websecure:
     expose:
       default: false
-  # Disable the metrics port for now
   metrics:
     expose:
       default: false
-  # Disable the dashboard port -- the dashboard hostname routes through web
   traefik:
     expose:
       default: false
 
-# Disable the LoadBalancer type for the default service
 providers:
   kubernetesCRD:
     enabled: true
@@ -56,9 +54,8 @@ providers:
 
 ingressRoute:
   dashboard:
-    enabled: false  # we'll create our own IngressRoute for it (gated via CF Access)
+    enabled: false
 
-# Logs as JSON for future log aggregator consumption
 logs:
   general:
     format: json
@@ -74,7 +71,6 @@ resources:
   limits:
     memory: 256Mi
 
-# Pod disruption budget so a node drain doesn't kill ingress
 podDisruptionBudget:
   enabled: true
   minAvailable: 1
