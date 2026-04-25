@@ -1,0 +1,27 @@
+# External Secrets Operator values
+# Service account name MUST be 'external-secrets' to match the Vault role binding.
+
+replicaCount: 2
+
+serviceAccount:
+  create: true
+  name: external-secrets
+
+# Webhook is mandatory -- leave default replica count
+webhook:
+  replicaCount: 2
+
+certController:
+  replicaCount: 1
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 64Mi
+
+# Disable the bitwarden-sdk-server we don't use
+bitwarden-sdk-server:
+  enabled: false
+
+# Don't install CRDs through here; they're chart-managed by default
+installCRDs: true

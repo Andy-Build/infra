@@ -1,0 +1,18 @@
+---
+# cloudflared in-cluster config. The actual ingress rules are managed at
+# Cloudflare (via Terraform's cloudflare_tunnel_config resource), so this
+# config is minimal: it just tells cloudflared where to find its credentials
+# and to fetch its routing config from the Cloudflare API.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflared-config
+  namespace: cloudflared
+data:
+  config.yaml: |
+    tunnel: andybuild-production-cluster
+    credentials-file: /etc/cloudflared/creds/credentials.json
+    metrics: 0.0.0.0:2000
+    no-autoupdate: true
+    # Use remote-managed config - all ingress rules come from CF API
+    # (set via cloudflare_tunnel_config terraform resource)

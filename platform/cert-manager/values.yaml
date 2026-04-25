@@ -1,0 +1,27 @@
+# cert-manager helm values
+# DOKS-friendly defaults; CRDs included.
+
+crds:
+  enabled: true
+  keep: true  # don't delete CRDs on chart removal
+
+replicaCount: 2
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+webhook:
+  replicaCount: 2
+
+cainjector:
+  replicaCount: 2
+
+# Use the Cloudflare DNS solver (we'll define ClusterIssuer separately)
+# extraArgs needed for ECDSA + larger key sizes on Let's Encrypt issuers
+extraArgs:
+  - --feature-gates=ExperimentalCertificateSigningRequestControllers=true
+
+prometheus:
+  enabled: false  # enable later when we add observability stack

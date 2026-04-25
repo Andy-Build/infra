@@ -1,0 +1,39 @@
+---
+# Self-signed root + intermediate CA pattern.
+# All internal cluster TLS uses this. Public-facing TLS is handled by
+# Cloudflare at the edge, so we don't need Let's Encrypt here.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-bootstrap
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: cluster-internal-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: cluster-internal-ca
+  subject:
+    organizations:
+      - andybuild-internal
+  duration: 87600h  # 10 years
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  secretName: cluster-internal-ca
+  issuerRef:
+    name: selfsigned-bootstrap
+    kind: ClusterIssuer
+---
+# The "real" issuer used by everything else
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: cluster-internal
+spec:
+  ca:
+    secretName: cluster-internal-ca

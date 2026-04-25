@@ -1,0 +1,209 @@
+################################################################################
+# Secrets -- NEVER commit
+################################################################################
+
+# Terraform-generated artifacts (private keys, CA bundles, kubeconfigs, etc.)
+.generated/
+*.generated/
+
+# tfvars files often contain non-secret config but may have sensitive values
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+!*.tfvars.sample
+
+# Environment files (TF_VAR_* exports)
+.env
+.env.*
+!.env.example
+*.envrc.local
+
+# Vault unseal keys / root tokens -- paranoid catchall (these belong in 1Password)
+**/unseal*
+**/*-unseal-keys*
+**/*root-token*
+**/.vault-token
+
+# Kubernetes credentials
+kubeconfig
+kubeconfig.*
+*.kubeconfig
+.kube/
+
+# SOPS / age keys (in case anyone bolts SOPS on later)
+*.agekey
+age-key.txt
+keys.txt
+
+# Cloudflare Tunnel credential files (JSON contains the tunnel secret)
+*-tunnel-credentials.json
+tunnel-creds*.json
+
+# Generic credential / private key catchalls
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+*.jks
+id_rsa
+id_ed25519
+id_ecdsa
+*_rsa
+*_ed25519
+*.priv
+
+# Docker config (auth tokens for registries)
+.docker/config.json
+docker-config.json
+
+################################################################################
+# Terraform / OpenTofu
+################################################################################
+
+# Local state -- must NEVER be committed once the S3 backend is configured
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Plan files (may contain sensitive variable values)
+*.tfplan
+tfplan
+plan.out
+*.plan
+
+# Provider plugin cache
+.terraform/
+.terraform.lock.hcl.bak
+
+# OpenTofu equivalents
+.tofu/
+.tofu.lock.hcl.bak
+
+# Override files used for local development
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# CLI logs
+.terraformrc
+terraform.rc
+
+################################################################################
+# Kubernetes / Helm
+################################################################################
+
+# Helm chart dependencies (run `helm dependency update` locally)
+charts/
+**/charts/*.tgz
+Chart.lock
+
+# Helm secrets (helm-secrets plugin output)
+secrets.yaml.dec
+*.yaml.dec
+
+# Kustomize build output
+kustomize-build/
+
+# Local kubeconfig overrides
+kubeconfig-local
+kubeconfig-dev
+
+################################################################################
+# Editors / IDEs
+################################################################################
+
+# VS Code (Andy uses this -- keep workspace settings local)
+.vscode/
+!.vscode/settings.json.example
+!.vscode/extensions.json
+
+# JetBrains
+.idea/
+*.iml
+*.iws
+
+# Vim / Neovim
+*.swp
+*.swo
+*~
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# Sublime
+*.sublime-workspace
+*.sublime-project
+
+################################################################################
+# OS noise
+################################################################################
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Linux
+*~
+.fuse_hidden*
+.Trash-*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+################################################################################
+# Build / runtime artifacts
+################################################################################
+
+# Logs
+*.log
+logs/
+
+# Temp / scratch
+tmp/
+temp/
+scratch/
+*.tmp
+*.bak
+*.orig
+
+# Archives (tarballs of the repo, etc.)
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+
+# Python (in case any helper scripts get added)
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.python-version
+
+# Node (if any tooling lands here)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+################################################################################
+# Local-only escape hatch
+################################################################################
+
+# Anything ending with .local is gitignored -- handy for personal scratch
+*.local

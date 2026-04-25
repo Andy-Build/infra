@@ -1,0 +1,110 @@
+---
+# Pull the sample secret from Vault to prove ESO -> Vault works
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: whoami-from-vault
+  namespace: whoami
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: vault
+    kind: ClusterSecretStore
+  target:
+    name: whoami-from-vault
+    creationPolicy: Owner
+  data:
+    - secretKey: GREETING
+      remoteRef:
+        key: sample/whoami
+        property: greeting
+    - secretKey: SERVED_BY
+      remoteRef:
+        key: sample/whoami
+        property: served_by
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whoami
+  namespace: whoami
+  labels:
+    app: whoami
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: whoami
+  template:
+    metadata:
+      labels:
+        app: whoami
+    spec:
+      containers:
+        - name: whoami
+          image: traefik/whoami:v1.10
+          args:
+            - --port=8080
+            - --name=$(POD_NAME)
+          env:
+            # Inject the Vault-sourced values to prove the path works.
+            # whoami doesn't render env vars in its body, but they show up
+            # in `kubectl describe pod` and verify ESO is doing its job.
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: GREETING
+              valueFrom:
+                secretKeyRef:
+                  name: whoami-from-vault
+                  key: GREETING
+            - name: SERVED_BY
+              valueFrom:
+                secretKeyRef:
+                  name: whoami-from-vault
+                  key: SERVED_BY
+          ports:
+            - containerPort: 8080
+              name: http
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65532
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: whoami
+  namespace: whoami
+spec:
+  selector:
+    app: whoami
+  ports:
+    - port: 80
+      targetPort: 8080
+      name: http
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: whoami
+  namespace: whoami
+spec:
+  entryPoints:
+    - web
+  routes:
+    - kind: Rule
+      match: Host(`whoami.andy.build`)
+      services:
+        - name: whoami
+          port: 80

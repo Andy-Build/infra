@@ -1,0 +1,80 @@
+# Traefik values
+# Behind Cloudflare Tunnel, so:
+#   - service is ClusterIP only (no public LB)
+#   - HTTP only on the entrypoint (no TLS at this layer)
+#   - trust X-Forwarded-* headers from cloudflared
+
+deployment:
+  replicas: 2
+  kind: Deployment
+
+# ClusterIP only. cloudflared connects via cluster DNS.
+service:
+  type: ClusterIP
+
+# Single HTTP entrypoint. CF terminates TLS at the edge.
+ports:
+  web:
+    port: 80
+    expose:
+      default: true
+    exposedPort: 80
+    protocol: TCP
+    # Trust forwarded headers from cloudflared (which is in-cluster, so
+    # technically a trusted source, but be specific anyway)
+    forwardedHeaders:
+      trustedIPs:
+        - 10.244.0.0/16  # DOKS pod CIDR
+        - 10.245.0.0/16  # DOKS service CIDR (varies; harmless if unused)
+        - 10.20.0.0/16   # VPC
+    proxyProtocol:
+      trustedIPs:
+        - 10.244.0.0/16
+        - 10.20.0.0/16
+  # No 'websecure' entrypoint -- TLS termination is at the edge
+  websecure:
+    expose:
+      default: false
+  # Disable the metrics port for now
+  metrics:
+    expose:
+      default: false
+  # Disable the dashboard port -- the dashboard hostname routes through web
+  traefik:
+    expose:
+      default: false
+
+# Disable the LoadBalancer type for the default service
+providers:
+  kubernetesCRD:
+    enabled: true
+    allowCrossNamespace: true
+  kubernetesIngress:
+    enabled: true
+    publishedService:
+      enabled: false
+
+ingressRoute:
+  dashboard:
+    enabled: false  # we'll create our own IngressRoute for it (gated via CF Access)
+
+# Logs as JSON for future log aggregator consumption
+logs:
+  general:
+    format: json
+    level: INFO
+  access:
+    enabled: true
+    format: json
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 256Mi
+
+# Pod disruption budget so a node drain doesn't kill ingress
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
